@@ -28,8 +28,9 @@ class MyGRU(nn.Module):
 
         self.fc = nn.Sequential(nn.Linear(hidden_size, hidden_size),
                                 nn.ReLU(),
-                                nn.Linear(hidden_size, output_size),
-                                nn.Tanh())
+                                nn.Linear(hidden_size, hidden_size),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size, output_size))
 
     def forward(self, x, state=None):
         batch_size = x.size(0)
