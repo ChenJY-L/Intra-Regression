@@ -31,11 +31,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from matplotlib import pyplot as plt
-from torch.utils.data import DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset, Dataset
 from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 
 from models import *
+
 
 
 class Config:
@@ -44,7 +45,7 @@ class Config:
     batch_size = 64
     learning_rate = 0.0003
     feature_size = 6  # 输入特征
-    hidden_size = 8  # 隐藏层维度
+    hidden_size = 128  # 隐藏层维度
     output_size = 1
     num_layers = 1  # GRU层数
     dropout_prob = 0.7
@@ -52,6 +53,39 @@ class Config:
     best_loss = 1
     model_name = 'lstm'
     save_path = './results/{}.pth'.format(model_name)
+
+
+class IntraDataset(Dataset):
+
+    def __init__(self, file_path, time_steps, feature_size):
+        # 读取文件
+        df = pd.read_excel(file_path)
+
+        # 数据归一化
+        scaler = MinMaxScaler()
+        df_normalized = scaler.fit_transform(df)
+
+        # 将归一化后的数据转换为 PyTorch 张量
+        self.data_x, self.data_y = self.split_data(df_normalized, time_steps, feature_size)
+
+    def __len__(self):
+        return len(self.data_x)
+
+    def __getitem__(self, idx):
+        return self.data_x[idx], self.data_y[idx]
+
+    def split_data(self, data, time_steps, feature_size):
+        data_x = []
+        data_y = []
+
+        for i in range(len(data) - time_steps):
+            data_x.append(data[i:i + time_steps][:, 3:])
+            data_y.append(data[i + time_steps][1])
+
+        data_x = torch.tensor(data_x).float()
+        data_y = torch.tensor(data_y).float()
+
+        return data_x, data_y
 
 
 def spilt_data(data, time_steps, feature_size):
@@ -106,10 +140,10 @@ def train():
     model = MyGRU(config.feature_size, config.hidden_size, config.num_layers, config.output_size, config.dropout_prob)
     # model = NNModel(config.feature_size, config.hidden_size, config.output_size)
     # model = Attention(config.feature_size, config.output_size, 1)
-    # model = CNN(config.feature_size, config.hidden_size, config.output_size)
+    # model = CNN1DRegression(config.timestep, config.output_size)
     loss_fn = nn.MSELoss()
     optimizer = optim.AdamW(model.parameters(), lr=config.learning_rate)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=Config.num_epochs//2)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=Config.num_epochs // 2)
 
     # 5. 训练模型
     for epoch in range(config.num_epochs):
