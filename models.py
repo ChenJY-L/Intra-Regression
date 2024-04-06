@@ -6,14 +6,25 @@ class NNModel(nn.Module):
 
     def __init__(self, input_size, hidden_size, output_size):
         super(NNModel, self).__init__()
-        self.fc = nn.Sequential(nn.Linear(input_size, hidden_size),
+        self.fc = nn.Sequential(nn.Linear(input_size, hidden_size*2),
                                 nn.ReLU(),
-                                nn.Linear(hidden_size, output_size))
-
-        self.relu = nn.ReLU()
+                                nn.Linear(hidden_size*2, hidden_size*4),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size*4, hidden_size*4),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size * 4, hidden_size * 4),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size * 4, hidden_size * 4),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size*4, hidden_size*2),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size*2, hidden_size),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size, output_size)
+                                )
 
     def forward(self, x):
-        return self.relu(self.fc(x))
+        return self.fc(x)
 
 
 class MyGRU(nn.Module):
@@ -40,6 +51,7 @@ class MyGRU(nn.Module):
         else:
             h0 = state
 
+        x = torch.unsqueeze(x, 1)
         y, state = self.rnn(x, h0)
         batch_size, time_steps, hidden_size = y.size()
         y = y.reshape(-1, hidden_size)
@@ -73,20 +85,25 @@ class MyLSTM(nn.Module):
 
 
 class CNN1DRegression(nn.Module):
-    def __init__(self, input_size, output_size, num_channels=[64, 128], kernel_sizes=[3, 3], dropout=0.5):
+    def __init__(self, input_channel, output_size, num_channels=None, kernel_sizes=None, dropout=0.3):
         super(CNN1DRegression, self).__init__()
+        if kernel_sizes is None:
+            kernel_sizes = [3, 3]
+        if num_channels is None:
+            num_channels = [8, 16]
         assert len(num_channels) == len(kernel_sizes), "Number of channels and kernel sizes should match"
 
-        self.conv1 = nn.Conv1d(in_channels=input_size, out_channels=num_channels[0], kernel_size=kernel_sizes[0])
+        self.conv1 = nn.Conv1d(in_channels=input_channel, out_channels=num_channels[0], kernel_size=kernel_sizes[0])
         self.conv2 = nn.Conv1d(in_channels=num_channels[0], out_channels=num_channels[1], kernel_size=kernel_sizes[1])
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(num_channels[-1], output_size)
 
     def forward(self, x):
+        x = torch.unsqueeze(x, 1)
         x = self.conv1(x)
         x = self.relu(x)
-        x = self.dropout(x)
+        # x = self.dropout(x)
 
         x = self.conv2(x)
         x = self.relu(x)
@@ -128,6 +145,7 @@ class CNN_LSTM(nn.Module):
         # Take the last hidden state
         out = self.fc(h_n[-1])
         return out
+
 
 class Attention(nn.Module):
     def __init__(self, input_size, output_size, num_heads=2, hidden_size=16, dropout=0.1):
