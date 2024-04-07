@@ -44,10 +44,10 @@ class Config:
     train_data_path = './data/Intra_train.xlsx'
     test_data_path = './data/Intra_test.xlsx'
     timestep = 1  # 时间步长
-    batch_size = 2
-    learning_rate = 3e-5
+    batch_size = 1
+    learning_rate = 1e-5
     feature_size = 6  # 输入特征
-    hidden_size = 256  # 隐藏层维度
+    hidden_size = 128  # 隐藏层维度
     output_size = 1
     num_layers = 4  # GRU层数
     dropout_prob = 0.3
@@ -63,8 +63,8 @@ class IntraDataset(Dataset):
         # 将归一化后的数据转换为 PyTorch 张量
         self.transform = transform
         # self.data_x, self.data_y = split_data(df)
-        self.data_x = torch.tensor(df.iloc[1:400, 1:].values).float()
-        self.data_y = torch.tensor(df.iloc[1:400, 0].values).float()
+        self.data_x = torch.tensor(df.iloc[:, 1:].values).float()
+        self.data_y = torch.tensor(df.iloc[:, 0].values).float()
 
     def __len__(self):
         return len(self.data_x)
@@ -151,14 +151,15 @@ def train():
 
     # 2. 创建迭代器
     train_loader = DataLoader(train_data, batch_size=config.batch_size, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=config.batch_size, shuffle=False)
+    test_loader = DataLoader(test_data, batch_size=config.batch_size, shuffle=True)
 
     # 3. 创建模型
     # model = MyGRU(config.feature_size, config.hidden_size, config.num_layers, config.output_size, config.dropout_prob)
     # model = CNN1DRegression(config.timestep, config.output_size)
-    model = NNModel(config.feature_size, config.hidden_size, config.output_size)
+    # model = NNModel(config.feature_size, config.hidden_size, config.output_size)
+    model = CNN_LSTM(config.feature_size, config.hidden_size, config.output_size, config.num_layers)
     loss_fn = nn.MSELoss()
-    optimizer = optim.Adam(model.parameters(), lr=config.learning_rate, weight_decay=1e-3)
+    optimizer = optim.AdamW(model.parameters(), lr=config.learning_rate)
 
     train_losses = []
     test_losses = []

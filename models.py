@@ -3,28 +3,38 @@ import torch.nn as nn
 
 
 class NNModel(nn.Module):
-
+    # RMSE: 0.15
+    # R2 0.74
     def __init__(self, input_size, hidden_size, output_size):
         super(NNModel, self).__init__()
-        self.fc = nn.Sequential(nn.Linear(input_size, hidden_size*2),
+        self.fc = nn.Sequential(nn.Linear(input_size, hidden_size//2),
                                 nn.ReLU(),
-                                nn.Linear(hidden_size*2, hidden_size*4),
+                                nn.Linear(hidden_size//2, hidden_size * 4),
                                 nn.ReLU(),
-                                nn.Linear(hidden_size*4, hidden_size*4),
-                                nn.ReLU(),
-                                nn.Linear(hidden_size * 4, hidden_size * 4),
-                                nn.ReLU(),
-                                nn.Linear(hidden_size * 4, hidden_size * 4),
-                                nn.ReLU(),
-                                nn.Linear(hidden_size*4, hidden_size*2),
-                                nn.ReLU(),
-                                nn.Linear(hidden_size*2, hidden_size),
-                                nn.ReLU(),
-                                nn.Linear(hidden_size, output_size)
-                                )
+                                nn.Linear(hidden_size * 4, 16))
+
+        self.backbone_net = nn.Sequential(nn.Conv1d(1, 16, 3),
+                                          nn.ReLU(),
+                                          nn.Conv1d(16, 32, 3),
+                                          nn.ReLU(),
+                                          nn.Conv1d(32, 64, 3))
+        self.dropout = nn.Dropout(0.1)
+        self.fc2 = nn.Sequential(nn.ReLU(),
+                                 nn.Linear(640, 64),
+                                 nn.ReLU(),
+                                 nn.Linear(64, 16),
+                                 nn.ReLU(),
+                                 nn.Linear(16, output_size))
 
     def forward(self, x):
-        return self.fc(x)
+        x1 = self.fc(x)
+        x2 = self.backbone_net(x1)
+        x3 = self.dropout(x2)
+
+        x3 = x3.view(1, -1)
+        y = self.fc2(x3)
+
+        return y
 
 
 class MyGRU(nn.Module):
@@ -115,36 +125,49 @@ class CNN1DRegression(nn.Module):
 
 
 class CNN_LSTM(nn.Module):
-    def __init__(self, input_channels, hidden_size, num_layers, num_classes):
+    def __init__(self, input_size, hidden_size, output_size, num_layers):
         super(CNN_LSTM, self).__init__()
 
-        # CNN layer
-        self.cnn = nn.Sequential(
-            nn.Conv1d(input_channels, 16, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool1d(kernel_size=2, stride=2)
-        )
+        self.num_layers = num_layers
+        self.hidden_size = hidden_size
 
-        # LSTM layer
-        self.lstm = nn.LSTM(input_size=16, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+        self.fc = nn.Sequential(nn.Linear(input_size, hidden_size // 2),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size // 2, hidden_size * 4),
+                                nn.ReLU(),
+                                nn.Linear(hidden_size * 4, 16))
 
-        # Fully connected layer
-        self.fc = nn.Linear(hidden_size, num_classes)
+        self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
 
-    def forward(self, x):
-        # Input shape: (batch_size, input_channels, sequence_length)
-        # CNN forward pass
-        x = self.cnn(x)
+        self.backbone_net = nn.Sequential(nn.Conv1d(1, 16, 3),
+                                          nn.ReLU(),
+                                          nn.Conv1d(16, 32, 3),
+                                          nn.ReLU(),
+                                          nn.Conv1d(32, 64, 3))
+        self.dropout = nn.Dropout(0.1)
+        self.fc2 = nn.Sequential(nn.ReLU(),
+                                 nn.Linear(122*64, 64),
+                                 nn.ReLU(),
+                                 nn.Linear(64, 16),
+                                 nn.ReLU(),
+                                 nn.Linear(16, output_size))
 
-        # Reshape for LSTM input: (batch_size, sequence_length, features)
-        x = x.permute(0, 2, 1)
+    def forward(self, x, state=None):
+        batch_size = x.size(0)
 
-        # LSTM forward pass
-        _, (h_n, _) = self.lstm(x)
+        # (batch_size, 6)
+        y, state = self.lstm(x)
+        # batch_size, time_steps, hidden_size = y.size()
+        # y = y.reshape(-1, hidden_size)
 
-        # Take the last hidden state
-        out = self.fc(h_n[-1])
-        return out
+        # (batchsize, 128)
+        y = torch.unsqueeze(y, dim=1)
+        y = self.backbone_net(y)
+        y = self.dropout(y)
+        y = y.view(batch_size, -1)
+        y = self.fc2(y)
+
+        return y
 
 
 class Attention(nn.Module):
