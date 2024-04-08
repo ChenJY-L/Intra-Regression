@@ -4,7 +4,8 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import r2_score
 
 
-def evaluate_model(model, test_loader):
+def evaluate_model(m, test_loader):
+    model = m.cpu()
     model.eval()
     with torch.no_grad():
         all_predictions = []
@@ -17,7 +18,7 @@ def evaluate_model(model, test_loader):
 
         all_predictions = np.concatenate(all_predictions)
         all_targets = np.concatenate(all_targets)
-        return all_predictions[:, 0], all_targets
+        return all_predictions, all_targets
 
 
 def plot_loss(train_losses, test_losses):
