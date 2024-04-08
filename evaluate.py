@@ -4,7 +4,8 @@ from matplotlib import pyplot as plt
 from sklearn.metrics import r2_score
 
 
-def evaluate_model(model, test_loader):
+def evaluate_model(m, test_loader):
+    model = m.cpu()
     model.eval()
     with torch.no_grad():
         all_predictions = []

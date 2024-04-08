@@ -45,15 +45,15 @@ class Config:
     test_data_path = './data/Intra_test.xlsx'
     timestep = 1  # 时间步长
     batch_size = 1
-    learning_rate = 1e-5
+    learning_rate = 2e-5
     feature_size = 6  # 输入特征
-    hidden_size = 128  # 隐藏层维度
+    hidden_size = 100  # 隐藏层维度
     output_size = 1
-    num_layers = 4  # GRU层数
+    num_layers = 1  # GRU层数
     dropout_prob = 0.3
     num_epochs = 150
     best_loss = float('inf')
-    model_name = 'gru'
+    model_name = 'cnn-lstm'
     save_path = './results/{}.pth'.format(model_name)
 
 
@@ -154,12 +154,14 @@ def train():
     test_loader = DataLoader(test_data, batch_size=config.batch_size, shuffle=True)
 
     # 3. 创建模型
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # model = MyGRU(config.feature_size, config.hidden_size, config.num_layers, config.output_size, config.dropout_prob)
     # model = CNN1DRegression(config.timestep, config.output_size)
     # model = NNModel(config.feature_size, config.hidden_size, config.output_size)
-    model = CNN_LSTM(config.feature_size, config.hidden_size, config.output_size, config.num_layers)
+    model = CNN_LSTM(config.feature_size, config.hidden_size, config.output_size, config.num_layers, config.dropout_prob)
+    model = model.to(device)
     loss_fn = nn.MSELoss()
-    optimizer = optim.AdamW(model.parameters(), lr=config.learning_rate)
+    optimizer = optim.RMSprop(model.parameters(), lr=config.learning_rate, momentum=1e-2)
 
     train_losses = []
     test_losses = []
@@ -173,7 +175,7 @@ def train():
         train_bar = tqdm(train_loader)
 
         for data in train_bar:
-            x, y = data
+            x, y = data[0].to(device), data[1].to(device)
             optimizer.zero_grad()
             y_pred = model(x)
             loss = loss_fn(y_pred, y)
@@ -181,7 +183,7 @@ def train():
             optimizer.step()
 
             running_loss += loss.item()
-            train_bar.set_description('[{}/{}] Train Epoch: loss:{:.3f} '.format(epoch + 1, config.num_epochs, loss))
+            train_bar.set_description('[{}/{}] Train Epoch: loss:{:.5f} '.format(epoch + 1, config.num_epochs, loss))
         train_losses.append(running_loss / len(train_loader))
 
         model.eval()
@@ -189,18 +191,21 @@ def train():
         with torch.no_grad():
             test_bar = tqdm(test_loader)
             for data in test_bar:
-                x, y = data
+                x, y = data[0].to(device), data[1].to(device)
                 y_pred = model(x)
                 test_loss += loss_fn(y_pred, y)
-                test_bar.set_description('Test: loss:{:.3f}'.format(test_loss / len(test_loader)))
+                test_bar.set_description('Test: loss:{:.5f}'.format(test_loss / len(test_loader)))
 
         test_loss /= len(test_loader)
-        test_losses.append(test_loss)
+        test_losses.append(test_loss.cpu())
 
         if test_loss < best_loss:
             best_loss = test_loss
-            torch.save(model.state_dict(), config.save_path)
-            print('\nBest loss: {}\n'.format(best_loss))
+            try:
+                torch.save(model.state_dict(), config.save_path)
+                print('\nBest loss: {}\n'.format(best_loss))
+            finally:
+                pass
 
     print('Finished')
     # 5. 评估模型
