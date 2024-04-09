@@ -139,11 +139,10 @@ class CNN_LSTM(nn.Module):
                                 nn.ReLU(),
                                 nn.Linear(hidden_size * 4, hidden_size))
 
-        self.lstm = nn.LSTM(input_size=hidden_size, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
-
-        self.backbone_net = nn.Sequential(nn.ReLU(),
-                                          nn.BatchNorm1d(1),
-                                          nn.Conv1d(1, 16, 3, 1, 1),
+        self.backbone_net = nn.Sequential(nn.Conv1d(1, 16, 1, 1, 0),
+                                          nn.ReLU(),
+                                          nn.BatchNorm1d(16),
+                                          nn.Conv1d(16, 16, 3, 1, 1),
                                           nn.ReLU(),
                                           nn.BatchNorm1d(16),
                                           nn.Conv1d(16, 32, 3, 1, 1),
@@ -155,9 +154,22 @@ class CNN_LSTM(nn.Module):
 
         self.res = nn.Conv1d(1, 64, 1)
 
+        self.backbone_net2 = nn.Sequential(nn.ReLU(),
+                                          nn.BatchNorm1d(64),
+                                          nn.Conv1d(64, 128, 3, 1, 1),
+                                          nn.ReLU(),
+                                          nn.BatchNorm1d(128),
+                                          nn.Conv1d(128, 128, 3, 1, 1),
+                                          nn.ReLU(),
+                                          nn.BatchNorm1d(128),
+                                          nn.Conv1d(128, 64, 3, 1, 1))
+
+        # self.lstm = nn.LSTM(input_size=hidden_size*64, hidden_size=hidden_size, num_layers=num_layers, batch_first=True)
+
         self.dropout = nn.Dropout(drop_prob)
+
         self.fc2 = nn.Sequential(nn.ReLU(),
-                                 nn.Linear(self.hidden_size * 64, 64),
+                                 nn.Linear(hidden_size*64, 64),
                                  nn.ReLU(),
                                  nn.Linear(64, 16),
                                  nn.ReLU(),
@@ -166,20 +178,24 @@ class CNN_LSTM(nn.Module):
     def forward(self, x, state=None):
         batch_size = x.size(0)
 
-        x = self.fc(x)  # (batch_size, 16)
+        y = self.fc(x)  # (batch_size, hidden_size)
 
-        y, state = self.lstm(x)  # (batch_size, 128)
 
-        y = torch.unsqueeze(y, dim=1)  # (batch_size, 1, 128)
 
-        x_res = self.res(y)  # (batch_size, 64, 128)
-        y = self.backbone_net(y)  # (batch_size, 64, 128)
+        y = torch.unsqueeze(y, dim=1)  # (batch_size, 1, hidden_size)
 
-        y = y + x_res  # (batch_size, 64, 128)
+        res = self.res(y)  # (batch_size, 64, hidden_size)
+        y = self.backbone_net(y)  # (batch_size, 64, hidden_size)
+        res2 = y    # (batch_size, 64, hidden_size)
+        y = y + res  # (batch_size, 64, hidden_size)
+        y = self.backbone_net2(y)   # (batch_size, 64, hidden_size)
+        y = y + res2    # (batch_size, 64, hidden_size)
+        y = self.dropout(y)  # (batch_size, 64, hidden_size)
 
-        y = self.dropout(y)  # (batch_size, 64, 128)
+        y = y.view(batch_size, -1)  # (batch_size, 1, 64*hidden_size)
 
-        y = y.view(batch_size, -1)  # (batch_size, 1, 64*128)
+        # y, state = self.lstm(y)  # (batch_size, hidden_size)
+
         y = self.fc2(y)
 
         y = y.squeeze(1)

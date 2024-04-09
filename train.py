@@ -44,14 +44,14 @@ class Config:
     train_data_path = './data/Intra_train.xlsx'
     test_data_path = './data/Intra_test.xlsx'
     timestep = 1  # 时间步长
-    batch_size = 16
-    learning_rate = 3e-6
+    batch_size = 32
+    learning_rate = 5e-6
     feature_size = 6  # 输入特征
-    hidden_size = 128  # 隐藏层维度
+    hidden_size = 196  # 隐藏层维度
     output_size = 1
     num_layers = 1  # GRU层数
     dropout_prob = 0.3
-    num_epochs = 1000
+    num_epochs = 200
     best_loss = float('inf')
     model_name = 'cnn-lstm'
     save_path = './results/{}.pth'.format(model_name)
@@ -151,7 +151,7 @@ def train():
 
     # 2. 创建迭代器
     train_loader = DataLoader(train_data, batch_size=config.batch_size, shuffle=True)
-    test_loader = DataLoader(test_data, batch_size=1, shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=config.batch_size, shuffle=True)
 
     # 3. 创建模型
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -162,6 +162,7 @@ def train():
     model = model.to(device)
     loss_fn = nn.MSELoss()
     optimizer = optim.RMSprop(model.parameters(), lr=config.learning_rate, momentum=1e-2, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, config.num_epochs)
 
     train_losses = []
     test_losses = []
@@ -185,6 +186,7 @@ def train():
             running_loss += loss.item()
             train_bar.set_description('[{}/{}] Train Epoch: loss:{:.5f} '.format(epoch + 1, config.num_epochs, loss))
         train_losses.append(running_loss / len(train_loader))
+        scheduler.step()
 
         model.eval()
         test_loss = 0.0
@@ -212,8 +214,11 @@ def train():
     plot_loss(train_losses, test_losses)
 
     # 获取所有预测值和目标值，用于绘制预测结果对比图
-    all_predictions, all_targets = evaluate_model(model, train_loader)
-    plot_predictions(all_predictions, all_targets)
+    all_train_predictions, all_train_targets = evaluate_model(model, train_loader)
+    plot_predictions(all_train_predictions, all_train_targets)
+
+    all_test_predictions, all_test_targets = evaluate_model(model, test_loader)
+    plot_predictions(all_test_predictions, all_test_targets)
     # print(all_predictions)
 
     # print(all_targets)
