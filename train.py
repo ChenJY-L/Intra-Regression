@@ -23,21 +23,15 @@
 """
 
 # Encoding utf-8
-from datetime import datetime
-
 import numpy as np
 import pandas as pd
-import torch
-import torch.nn as nn
 import torch.optim as optim
-from matplotlib import pyplot as plt
-from torch.utils.data import DataLoader, TensorDataset, Dataset
-from torchvision import transforms
+from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler
 
 from models import *
-from evaluate import *
+from utilis.evaluate import *
 
 
 class Config:
@@ -51,7 +45,7 @@ class Config:
     output_size = 1
     num_layers = 1  # GRU层数
     dropout_prob = 0.3
-    num_epochs = 200
+    num_epochs = 1000
     best_loss = float('inf')
     model_name = 'cnn-lstm'
     save_path = './results/{}.pth'.format(model_name)
@@ -161,7 +155,7 @@ def train():
     model = CNN_LSTM(config.feature_size, config.hidden_size, config.output_size, config.num_layers, config.dropout_prob)
     model = model.to(device)
     loss_fn = nn.MSELoss()
-    optimizer = optim.RMSprop(model.parameters(), lr=config.learning_rate, momentum=1e-2, weight_decay=1e-4)
+    optimizer = optim.RMSprop(model.parameters(), lr=config.learning_rate, momentum=1e-2, weight_decay=1e-3)
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, config.num_epochs)
 
     train_losses = []
