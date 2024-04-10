@@ -1,12 +1,9 @@
-import numpy as np
 import pandas as pd
-import torch
-import torch.nn as nn
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from sklearn.preprocessing import MinMaxScaler
 
 from models import *
-from utilis.evaluate import *
+from evaluate import *
 from train import IntraDataset, Config
 
 

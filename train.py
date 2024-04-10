@@ -23,7 +23,6 @@
 """
 
 # Encoding utf-8
-import numpy as np
 import pandas as pd
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
@@ -31,7 +30,7 @@ from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
 
 from models import *
-from utilis.evaluate import *
+from evaluate import *
 
 
 class Config:
