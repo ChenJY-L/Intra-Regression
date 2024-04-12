@@ -2,15 +2,25 @@ import torch
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import r2_score
+from sklearn.preprocessing import MinMaxScaler
+from torch.utils.data import DataLoader, Dataset
 
 
-def evaluate_model(m, test_loader):
+def evaluate_model(m, data_loader: DataLoader, y_scaler: MinMaxScaler):
+    """
+    模型评价函数
+    :param m: 回归模型
+    :param data_loader: 数据集
+    :param y_scaler: y数据归一化方法
+    :return: None
+    """
+
     model = m.cpu()
     model.eval()
     with torch.no_grad():
         all_predictions = []
         all_targets = []
-        for data in test_loader:
+        for data in data_loader:
             x, y = data
             y_pred = model(x)
             all_predictions.append(y_pred.numpy())
@@ -18,6 +28,9 @@ def evaluate_model(m, test_loader):
 
         all_predictions = np.concatenate(all_predictions)
         all_targets = np.concatenate(all_targets)
+
+        all_predictions = y_scaler.inverse_transform(all_predictions.reshape(-1, 1))
+        all_targets = y_scaler.inverse_transform(all_targets.reshape(-1, 1))
         return all_predictions, all_targets
 
 
@@ -43,6 +56,7 @@ def plot_predictions(predictions, targets):
 
     # 计算 RMSE
     rmse = np.sqrt(np.mean((predictions - targets) ** 2))
+    print("R2 {:.2f}, RMSE {:.2f}".format(r2, rmse))
 
     # 添加标题和标签
     plt.xlabel('True values')

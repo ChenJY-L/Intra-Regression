@@ -9,7 +9,7 @@ from train import IntraDataset, Config
 
 if __name__ == "__main__":
     c = Config()
-    model = CNN_LSTM(c.feature_size, c.hidden_size, c.output_size, c.num_layers, c.dropout_prob)
+    model = ResNet1D(c.feature_size, c.hidden_size, c.output_size, c.num_layers, c.dropout_prob)
     model.load_state_dict(torch.load(c.save_path))
 
     test_df = pd.read_excel(c.test_data_path)

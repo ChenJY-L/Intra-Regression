@@ -24,6 +24,7 @@
 
 # Encoding utf-8
 import pandas as pd
+import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 from tqdm import tqdm
@@ -37,14 +38,14 @@ class Config:
     train_data_path = './data/Intra_train.xlsx'
     test_data_path = './data/Intra_test.xlsx'
     timestep = 1  # 时间步长
-    batch_size = 32
-    learning_rate = 5e-6
+    batch_size = 16
+    learning_rate = 1e-6
     feature_size = 6  # 输入特征
     hidden_size = 196  # 隐藏层维度
     output_size = 1
-    num_layers = 1  # GRU层数
+    num_layers = 2  # GRU层数
     dropout_prob = 0.3
-    num_epochs = 1000
+    num_epochs = 600
     best_loss = float('inf')
     model_name = 'cnn-lstm'
     save_path = './results/{}.pth'.format(model_name)
@@ -148,14 +149,18 @@ def train():
 
     # 3. 创建模型
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # device = torch.device("cpu")
     # model = MyGRU(config.feature_size, config.hidden_size, config.num_layers, config.output_size, config.dropout_prob)
     # model = CNN1DRegression(config.timestep, config.output_size)
     # model = NNModel(config.feature_size, config.hidden_size, config.output_size)
-    model = CNN_LSTM(config.feature_size, config.hidden_size, config.output_size, config.num_layers, config.dropout_prob)
+    model = ResNet1D(config.feature_size, config.hidden_size, config.output_size, config.num_layers, config.dropout_prob)
     model = model.to(device)
     loss_fn = nn.MSELoss()
+    current_optim = "RMS"
     optimizer = optim.RMSprop(model.parameters(), lr=config.learning_rate, momentum=1e-2, weight_decay=1e-3)
-    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, config.num_epochs)
+    # optimizer = optim.AdamW(model.parameters(), lr=config.learning_rate)
+    # optimizer = optim.SGD(model.parameters(), lr=config.learning_rate, momentum=1e-2, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, config.num_epochs)
 
     train_losses = []
     test_losses = []
@@ -202,15 +207,26 @@ def train():
             finally:
                 pass
 
+        if epoch >= config.num_epochs*2/3 and current_optim == "Adam":
+            print("Use SGD ")
+            current_optim = "SGD"
+            optimizer = optim.SGD(model.parameters(), lr=scheduler.get_last_lr()[-1], momentum=1e-2, weight_decay=1e-2)
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.num_epochs//3)
+        if epoch >= config.num_epochs/3 and current_optim == "RMS":
+            current_optim = "Adam"
+            print("Use Adam")
+            optimizer = optim.Adam(model.parameters(), lr=scheduler.get_last_lr()[-1])
+
     print('Finished')
+    # torch.save(model.state_dict(), config.save_path + "last")
     # 5. 评估模型
     plot_loss(train_losses, test_losses)
 
     # 获取所有预测值和目标值，用于绘制预测结果对比图
-    all_train_predictions, all_train_targets = evaluate_model(model, train_loader)
+    all_train_predictions, all_train_targets = evaluate_model(model, train_loader, y_scaler)
     plot_predictions(all_train_predictions, all_train_targets)
 
-    all_test_predictions, all_test_targets = evaluate_model(model, test_loader)
+    all_test_predictions, all_test_targets = evaluate_model(model, test_loader, y_scaler)
     plot_predictions(all_test_predictions, all_test_targets)
     # print(all_predictions)
 
