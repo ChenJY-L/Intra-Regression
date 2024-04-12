@@ -20,5 +20,5 @@ if __name__ == "__main__":
     test_df.iloc[:, 1:] = x_scaler.fit_transform(test_df.iloc[:, 1:])
     test_data = IntraDataset(test_df)
     test_loader = DataLoader(test_data, batch_size=1, shuffle=False)
-    all_test_predictions, all_test_targets = evaluate_model(model, test_loader)
+    all_test_predictions, all_test_targets = evaluate_model(model, test_loader, y_scaler)
     plot_predictions(all_test_predictions, all_test_targets)
