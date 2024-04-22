@@ -4,14 +4,15 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
 
+
 class IntraDataset(Dataset):
 
     def __init__(self, df: pd.DataFrame, transform=None):
         # 将归一化后的数据转换为 PyTorch 张量
         self.transform = transform
         # self.data_x, self.data_y = split_data(df)
-        self.data_x = torch.tensor(df.iloc[:, 1:7].values).float()
-        self.data_y = torch.tensor(df.iloc[:, 0].values).float()
+        self.data_x = torch.tensor(df.iloc[:, 3:].values).float()
+        self.data_y = torch.tensor(df.iloc[:, 2].values).float()
 
     def __len__(self):
         return len(self.data_x)

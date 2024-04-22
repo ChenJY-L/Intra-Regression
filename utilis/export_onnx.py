@@ -1,10 +1,6 @@
-import pandas as pd
-from torch.utils.data import DataLoader
-from sklearn.preprocessing import MinMaxScaler
-
 from regression_models import *
-from evaluate import *
-from train_regression import IntraDataset, RegressionConfig
+from utilis.evaluate import *
+from train_regression import RegressionConfig
 
 
 if __name__ == "__main__":

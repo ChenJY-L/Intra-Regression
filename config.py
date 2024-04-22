@@ -1,15 +1,15 @@
 class RegressionConfig:
-    train_data_path = './data/Intra_train.xlsx'
-    test_data_path = './data/Intra_test.xlsx'
+    data_path = './data/Intra_CLS.xlsx'
+    ratio = 0.3  # train:test
     timestep = 1  # 时间步长
     batch_size = 16
     learning_rate = 1e-6
     feature_size = 6  # 输入特征
-    hidden_size = 196  # 隐藏层维度
+    hidden_size = 160  # 隐藏层维度
     output_size = 1
     num_layers = 2  # GRU层数
     dropout_prob = 0.3
-    num_epochs = 600
+    num_epochs = 1200
     best_loss = float('inf')
     model_name = 'cnn-lstm'
     save_path = './results/{}.pth'.format(model_name)

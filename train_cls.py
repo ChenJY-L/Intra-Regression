@@ -1,14 +1,10 @@
 # Encoding utf-8
-import pandas as pd
-import torch
 import torch.optim as optim
-from tqdm import tqdm
-from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
 from config import ClsConfig
 from classification_models import *
-from evaluate import *
+from utilis.evaluate import *
 from datasets import *
 
 
@@ -79,7 +75,7 @@ def train_loop(model, loss_fn, train_loader, test_loader, optimizer,
             f"Train Loss: {train_loss / len(train_loader):.4f}, Train Acc: {train_accuracy:.2f}%,"
             f" Test Loss: {test_loss / len(test_loader):.4f}, Test Acc: {test_accuracy:.2f}%")
 
-        return model
+    return model
 
 
 def train():
@@ -126,7 +122,7 @@ def train():
                        cfg.num_epochs,
                        device)
 
-    torch.save(cfg.save_path, model.state_dict())
+    torch.save(model.state_dict(), cfg.save_path)
     print("Finished")
 
 

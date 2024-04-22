@@ -29,8 +29,7 @@ class CLSRes(nn.Module):
                                  nn.ReLU(),
                                  nn.Linear(64, 32),
                                  nn.ReLU(),
-                                 nn.Linear(32, num_classes),
-                                 nn.Softmax())
+                                 nn.Linear(32, num_classes))
 
     def _make_blocks(self, base_channels, num_blocks):
         blocks = []
@@ -49,4 +48,5 @@ class CLSRes(nn.Module):
         y = y.view(batch_size, -1)  # (batch_size, 1, 64*hidden_size)
         y = self.fc2(y)
         y = y.squeeze(1)
+        y = F.softmax(y, dim=1)
         return y

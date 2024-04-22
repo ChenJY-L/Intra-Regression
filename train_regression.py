@@ -23,15 +23,13 @@
 """
 
 # Encoding utf-8
-import pandas as pd
-import torch
 import torch.optim as optim
+from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-from sklearn.preprocessing import MinMaxScaler
 
 from config import RegressionConfig
 from regression_models import *
-from evaluate import *
+from utilis.evaluate import *
 from datasets import *
 
 
@@ -41,15 +39,17 @@ def train():
 
     # 1. 创建数据集
     # 读取文件
-    train_df, test_df = read_dataset(config.train_data_path, config.test_data_path)
+    df = read_data(config.data_path)
+    train_df, test_df = train_test_split(df, test_size=config.ratio, random_state=42)
+    del df
 
     x_scaler = MinMaxScaler()
-    train_df.iloc[:, 1:7] = x_scaler.fit_transform(train_df.iloc[:, 1:7])
-    test_df.iloc[:, 1:7] = x_scaler.transform(test_df.iloc[:, 1:7])
+    train_df.iloc[:, 3:] = x_scaler.fit_transform(train_df.iloc[:, 3:])
+    test_df.iloc[:, 3:] = x_scaler.transform(test_df.iloc[:, 3:])
 
     y_scaler = MinMaxScaler()
-    train_df.iloc[:, 0] = y_scaler.fit_transform(train_df.iloc[:, 0].values.reshape(-1, 1))
-    test_df.iloc[:, 0] = y_scaler.transform(test_df.iloc[:, 0].values.reshape(-1, 1))
+    train_df.iloc[:, 2] = y_scaler.fit_transform(train_df.iloc[:, 2].values.reshape(-1, 1))
+    test_df.iloc[:, 2] = y_scaler.transform(test_df.iloc[:, 2].values.reshape(-1, 1))
 
     train_data = IntraDataset(train_df)
     test_data = IntraDataset(test_df)
