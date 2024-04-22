@@ -4,6 +4,7 @@ import torch
 import torch.optim as optim
 from tqdm import tqdm
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
 
 from config import ClsConfig
 from classification_models import *
@@ -78,12 +79,16 @@ def train_loop(model, loss_fn, train_loader, test_loader, optimizer,
             f"Train Loss: {train_loss / len(train_loader):.4f}, Train Acc: {train_accuracy:.2f}%,"
             f" Test Loss: {test_loss / len(test_loader):.4f}, Test Acc: {test_accuracy:.2f}%")
 
+        return model
+
 
 def train():
     cfg = ClsConfig()
 
     """ 1. 创建数据集 """
-    train_df, test_df = read_dataset(cfg.train_data_path, cfg.test_data_path)
+    df = read_data(cfg.data_path)
+    train_df, test_df = train_test_split(df, test_size=cfg.ratio, random_state=42)
+    del df
 
     # 数据归一化
     x = cfg.x_index
@@ -92,12 +97,12 @@ def train():
     train_df.iloc[:, x:] = x_scaler.fit_transform(train_df.iloc[:, x:])
     test_df.iloc[:, x:] = x_scaler.transform(test_df.iloc[:, x:])
 
-    y_scaler = MinMaxScaler()
-    train_df.iloc[:, y] = y_scaler.fit_transform(train_df.iloc[:, cfg.y_index].values.reshape(-1, 1))
-    test_df.iloc[:, y] = y_scaler.transform(test_df.iloc[:, cfg.y_index].values.reshape(-1, 1))
+    # y_scaler = MinMaxScaler()
+    # train_df.iloc[:, y] = y_scaler.fit_transform(train_df.iloc[:, cfg.y_index].values.reshape(-1, 1))
+    # test_df.iloc[:, y] = y_scaler.transform(test_df.iloc[:, cfg.y_index].values.reshape(-1, 1))
 
-    train_data = ClsIntraDataset(train_df)
-    test_data = ClsIntraDataset(test_df)
+    train_data = ClsIntraDataset(train_df, cfg.class_to_idx)
+    test_data = ClsIntraDataset(test_df, cfg.class_to_idx)
 
     train_loader = DataLoader(train_data, batch_size=cfg.batch_size, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=cfg.batch_size, shuffle=False)
@@ -112,14 +117,17 @@ def train():
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, cfg.num_epochs)
 
     """ 3. 模型训练 """
-    train_loop(model,
-               loss_fn,
-               train_loader,
-               test_loader,
-               optimizer,
-               scheduler,
-               cfg.num_epochs,
-               device)
+    model = train_loop(model,
+                       loss_fn,
+                       train_loader,
+                       test_loader,
+                       optimizer,
+                       scheduler,
+                       cfg.num_epochs,
+                       device)
+
+    torch.save(cfg.save_path, model.state_dict())
+    print("Finished")
 
 
 if __name__ == "__main__":

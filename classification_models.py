@@ -13,11 +13,11 @@ class CLSRes(nn.Module):
         # self.num_layers = num_layers
         # self.hidden_size = hidden_size
 
-        self.fc = nn.Sequential(nn.Linear(input_size, hidden_size // 4),
-                                nn.ReLU(),
-                                nn.Linear(hidden_size // 4, hidden_size * 4),
-                                nn.ReLU(),
-                                nn.Linear(hidden_size * 4, hidden_size))
+        self.MLP = nn.Sequential(nn.Linear(input_size, hidden_size // 4),
+                                 nn.ReLU(),
+                                 nn.Linear(hidden_size // 4, hidden_size * 4),
+                                 nn.ReLU(),
+                                 nn.Linear(hidden_size * 4, hidden_size))
 
         self.backbone_net1 = ResidualBlock1D(1, 32)
         self.backbone_net2 = ResidualBlock1D(32, 64)
@@ -25,7 +25,7 @@ class CLSRes(nn.Module):
         self.dropout = nn.Dropout(drop_prob)
 
         self.fc2 = nn.Sequential(nn.ReLU(),
-                                 nn.Linear(hidden_size, 64),
+                                 nn.Linear(hidden_size*64, 64),
                                  nn.ReLU(),
                                  nn.Linear(64, 32),
                                  nn.ReLU(),
@@ -40,7 +40,7 @@ class CLSRes(nn.Module):
 
     def forward(self, x, state=None):
         batch_size = x.size(0)
-        y = self.fc(x)  # (batch_size, hidden_size)
+        y = self.MLP(x)  # (batch_size, hidden_size)
         y = y.unsqueeze(1)
         y = self.backbone_net1(y)  # (batch_size, 32, hidden_size)
         y = self.backbone_net2(y)  # (batch_size, 64, hidden_size)
