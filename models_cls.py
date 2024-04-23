@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from regression_models import ResidualBlock1D
+from models_reg import ResidualBlock1D
 
 
 class CLSRes(nn.Module):

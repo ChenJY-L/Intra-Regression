@@ -1,6 +1,6 @@
-from regression_models import *
+from models_reg import *
 from utilis.evaluate import *
-from train_regression import RegressionConfig
+from train_reg import RegressionConfig
 
 
 if __name__ == "__main__":

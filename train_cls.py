@@ -3,7 +3,7 @@ import torch.optim as optim
 from sklearn.model_selection import train_test_split
 
 from config import ClsConfig
-from classification_models import *
+from models_cls import *
 from utilis.evaluate import *
 from datasets import *
 

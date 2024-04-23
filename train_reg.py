@@ -28,7 +28,7 @@ from sklearn.model_selection import train_test_split
 from tqdm import tqdm
 
 from config import RegressionConfig
-from regression_models import *
+from models_reg import *
 from utilis.evaluate import *
 from datasets import *
 
@@ -82,10 +82,11 @@ def train():
     # 4. 训练模型
     for epoch in range(config.num_epochs):
         model.train()
-        running_loss = 0.0
-        train_bar = tqdm(train_loader)
 
-        for data in train_bar:
+        running_loss = 0.0
+        # train_bar = tqdm(train_loader)
+
+        for data in train_loader:
             x, y = data[0].to(device), data[1].to(device)
             optimizer.zero_grad()
             y_pred = model(x)
@@ -94,22 +95,28 @@ def train():
             optimizer.step()
 
             running_loss += loss.item()
-            train_bar.set_description('[{}/{}] Train Epoch: loss:{:.5f} '.format(epoch + 1, config.num_epochs, loss))
+            # train_bar.set_description('[{}/{}] Train Epoch: loss:{:.5f} '.format(epoch + 1, config.num_epochs, loss))
         train_losses.append(running_loss / len(train_loader))
         scheduler.step()
 
         model.eval()
         test_loss = 0.0
         with torch.no_grad():
-            test_bar = tqdm(test_loader)
-            for data in test_bar:
+            # test_bar = tqdm(test_loader)
+            for data in test_loader:
                 x, y = data[0].to(device), data[1].to(device)
                 y_pred = model(x)
                 test_loss += loss_fn(y_pred, y)
-                test_bar.set_description('Test: loss:{:.5f}'.format(test_loss / len(test_loader)))
+                # test_bar.set_description('Test: loss:{:.5f}'.format(test_loss / len(test_loader)))
 
         test_loss /= len(test_loader)
         test_losses.append(test_loss.cpu())
+
+        # Print training progress
+        print(
+            f"Epoch {epoch + 1}/{config.num_epochs}, "
+            f"Train Loss: {running_loss / len(train_loader):.4f},"
+            f"Test Loss: {test_loss / len(test_loader):.4f}")
 
         if test_loss < best_loss:
             best_loss = test_loss

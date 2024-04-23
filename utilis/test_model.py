@@ -1,8 +1,8 @@
 import pandas as pd
 
-from regression_models import *
+from models_reg import *
 from utilis.evaluate import *
-from train_regression import IntraDataset, RegressionConfig
+from train_reg import IntraDataset, RegressionConfig
 
 
 if __name__ == "__main__":
