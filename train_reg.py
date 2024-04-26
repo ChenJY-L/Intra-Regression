@@ -64,8 +64,9 @@ def train():
     # model = MyGRU(config.feature_size, config.hidden_size, config.num_layers, config.output_size, config.dropout_prob)
     # model = CNN1DRegression(config.timestep, config.output_size)
     # model = NNModel(config.feature_size, config.hidden_size, config.output_size)
-    model = ResNet1D(config.feature_size, config.hidden_size, config.output_size, config.num_layers,
-                     config.dropout_prob)
+    # model = ResNet1D(config.feature_size, config.hidden_size, config.output_size, config.num_layers,
+    #                  config.dropout_prob)
+    model = RegNet(config.feature_size, config.hidden_size, config.output_size, config.num_layers, config.dropout_prob)
     model = model.to(device)
     loss_fn = nn.MSELoss()
     current_optim = "RMS"

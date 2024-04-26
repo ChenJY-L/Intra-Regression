@@ -5,13 +5,13 @@ class RegressionConfig:
     batch_size = 16
     learning_rate = 1e-6
     feature_size = 6  # 输入特征
-    hidden_size = 160  # 隐藏层维度
+    hidden_size = 72  # 隐藏层维度  (160)
     output_size = 1
-    num_layers = 2  # GRU层数
+    num_layers = 3  # GRU层数
     dropout_prob = 0.3
     num_epochs = 1200
     best_loss = float('inf')
-    model_name = 'cnn-lstm'
+    model_name = 'reg'
     save_path = './results/{}.pth'.format(model_name)
 
 

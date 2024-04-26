@@ -212,6 +212,46 @@ class ResNet1D(nn.Module):
         return y
 
 
+class RegNet(nn.Module):
+    # RMSE: 0
+    # R2: 0
+    def __init__(self, input_size, hidden_size, output_size, num_blocks=3, drop_prob=0.3):
+        super(RegNet, self).__init__()
+
+        # self.num_layers = num_layers
+        # self.hidden_size = hidden_size
+
+        self.conv = nn.Conv1d(1, hidden_size, 1)
+        self.backbone_net = self._make_blocks(hidden_size, num_blocks)
+        self.avg_pool = nn.AdaptiveAvgPool1d(hidden_size//2)
+        self.dropout = nn.Dropout(drop_prob)
+
+        self.fc2 = nn.Sequential(nn.ELU(),
+                                 nn.Linear(hidden_size * hidden_size//2, 64),
+                                 nn.ELU(),
+                                 nn.Linear(64, 32),
+                                 nn.ELU(),
+                                 nn.Linear(32, output_size))
+
+    def _make_blocks(self, base_channels, num_blocks):
+        blocks = []
+        for i in range(num_blocks):
+            blocks.append(ResidualBlock1D(base_channels, base_channels))
+        return nn.Sequential(*blocks)
+
+    def forward(self, x):
+        batch_size = x.size(0)
+        x = x.unsqueeze(1)
+        y = self.conv(x)
+        y = self.backbone_net(y)
+        y = self.avg_pool(y)
+        y = self.dropout(y)  # (batch_size, 64, hidden_size)
+        y = y.view(batch_size, -1)  # (batch_size, 1, 64*hidden_size)
+        y = self.fc2(y)
+        y = y.squeeze(1)
+        return y
+
+
 class CNN_LSTM(nn.Module):
     # RMSE: 0.12
     # R2: 0.83
