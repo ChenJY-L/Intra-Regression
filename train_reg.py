@@ -25,7 +25,6 @@
 # Encoding utf-8
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
-from tqdm import tqdm
 
 from config import RegressionConfig
 from models_reg import *
@@ -39,7 +38,7 @@ def train():
 
     # 1. 创建数据集
     # 读取文件
-    df = read_data(config.data_path)
+    df = read_data(config.data_path,0)
     train_df, test_df = train_test_split(df, test_size=config.ratio, random_state=42)
     del df
 
@@ -60,19 +59,14 @@ def train():
 
     # 3. 创建模型
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # device = torch.device("cpu")
-    # model = MyGRU(config.feature_size, config.hidden_size, config.num_layers, config.output_size, config.dropout_prob)
-    # model = CNN1DRegression(config.timestep, config.output_size)
-    # model = NNModel(config.feature_size, config.hidden_size, config.output_size)
     # model = ResNet1D(config.feature_size, config.hidden_size, config.output_size, config.num_layers,
     #                  config.dropout_prob)
     model = RegNet(config.feature_size, config.hidden_size, config.output_size, config.num_layers, config.dropout_prob)
     model = model.to(device)
-    loss_fn = nn.MSELoss()
+    # loss_fn = nn.MSELoss()
+    loss_fn = nn.HuberLoss()
     current_optim = "RMS"
     optimizer = optim.RMSprop(model.parameters(), lr=config.learning_rate, momentum=1e-2, weight_decay=1e-3)
-    # optimizer = optim.AdamW(model.parameters(), lr=config.learning_rate)
-    # optimizer = optim.SGD(model.parameters(), lr=config.learning_rate, momentum=1e-2, weight_decay=1e-4)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, config.num_epochs)
 
     train_losses = []
@@ -116,8 +110,8 @@ def train():
         # Print training progress
         print(
             f"Epoch {epoch + 1}/{config.num_epochs}, "
-            f"Train Loss: {running_loss / len(train_loader):.4f},"
-            f"Test Loss: {test_loss / len(test_loader):.4f}")
+            f"Train Loss: {running_loss / len(train_loader):.6f}, "
+            f"Test Loss: {test_loss / len(test_loader):.6f}")
 
         if test_loss < best_loss:
             best_loss = test_loss
@@ -148,9 +142,8 @@ def train():
 
     all_test_predictions, all_test_targets = evaluate_model(model, test_loader, y_scaler)
     plot_predictions(all_test_predictions, all_test_targets)
-    # print(all_predictions)
 
-    # print(all_targets)
+    print(config.__dict__)
 
 
 if __name__ == '__main__':

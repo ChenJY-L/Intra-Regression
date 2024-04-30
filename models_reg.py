@@ -242,11 +242,12 @@ class RegNet(nn.Module):
     def forward(self, x):
         batch_size = x.size(0)
         x = x.unsqueeze(1)
-        y = self.conv(x)
-        y = self.backbone_net(y)
+        x = self.conv(x)
+        y = self.backbone_net(x)
+        y = F.relu(x + y, inplace=False)
         y = self.avg_pool(y)
-        y = self.dropout(y)  # (batch_size, 64, hidden_size)
-        y = y.view(batch_size, -1)  # (batch_size, 1, 64*hidden_size)
+        y = self.dropout(y)
+        y = y.view(batch_size, -1)
         y = self.fc2(y)
         y = y.squeeze(1)
         return y

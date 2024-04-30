@@ -1,16 +1,23 @@
 class RegressionConfig:
-    data_path = './data/Intra_CLS.xlsx'
-    ratio = 0.3  # train:test
+    """ Config class for regression"""
+    """ Dataset parameters"""
+    data_path = './data/Intra_CLS1.xlsx'
+    ratio = 0.2  # train:test
     timestep = 1  # 时间步长
+
+    """ Training parameters """
     batch_size = 16
     learning_rate = 1e-6
+    num_epochs = 3600
+
+    """ Model parameters """
     feature_size = 6  # 输入特征
-    hidden_size = 72  # 隐藏层维度  (160)
-    output_size = 1
+    hidden_size = 132  # 隐藏层维度  (160)
     num_layers = 3  # GRU层数
+    output_size = 1
     dropout_prob = 0.3
-    num_epochs = 1200
-    best_loss = float('inf')
+
+    """ Output parameters """
     model_name = 'reg'
     save_path = './results/{}.pth'.format(model_name)
 

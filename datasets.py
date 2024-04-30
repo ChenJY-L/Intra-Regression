@@ -42,12 +42,13 @@ class ClsIntraDataset(Dataset):
         return x, y
 
 
-def read_data(file_path):
+def read_data(file_path, sheet_name=0):
     """
     Read data from a file into a pandas DataFrame.
 
     Args:
         file_path (str): The path to the file.
+        sheet_name (int or str): The name of the sheet in the file.
 
     Returns:
         pandas.DataFrame: The DataFrame containing the data from the file.
@@ -55,7 +56,7 @@ def read_data(file_path):
     if file_path.endswith('.csv'):
         df = pd.read_csv(file_path)
     elif file_path.endswith('.xlsx'):
-        df = pd.read_excel(file_path)
+        df = pd.read_excel(file_path, sheet_name=sheet_name)
     else:
         raise ValueError("Unsupported file format. Only CSV and Excel files are supported.")
 
