@@ -8,36 +8,12 @@ class NNModel(nn.Module):
     # R2 0.74
     def __init__(self, input_size, hidden_size, output_size):
         super(NNModel, self).__init__()
-        self.fc = nn.Sequential(nn.Linear(input_size, hidden_size // 2),
+        self.fc = nn.Sequential(nn.Linear(6, 64),
                                 nn.ReLU(),
-                                nn.Linear(hidden_size // 2, hidden_size * 4),
-                                nn.ReLU(),
-                                nn.Linear(hidden_size * 4, 16))
-
-        self.backbone_net = nn.Sequential(nn.Conv1d(1, 16, 3),
-                                          nn.ReLU(),
-                                          nn.Conv1d(16, 32, 3),
-                                          nn.ReLU(),
-                                          nn.Conv1d(32, 64, 3))
-        self.dropout = nn.Dropout(0.1)
-        self.fc2 = nn.Sequential(nn.ReLU(),
-                                 nn.Linear(640, 64),
-                                 nn.ReLU(),
-                                 nn.Linear(64, 16),
-                                 nn.ReLU(),
-                                 nn.Linear(16, output_size))
+                                nn.Linear(64, output_size))
 
     def forward(self, x):
-        batch_size = x.size(0)
-
-        x1 = self.fc(x)
-        x1 = x1.unsqueeze(1)
-        x2 = self.backbone_net(x1)
-        x3 = self.dropout(x2)
-
-        x3 = x3.view(batch_size, -1)
-        y = self.fc2(x3)
-
+        y = self.fc(x)
         return y
 
 

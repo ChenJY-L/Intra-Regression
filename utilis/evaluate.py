@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.metrics import r2_score
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 from torch.utils.data import DataLoader, Dataset
 
 
@@ -68,6 +68,8 @@ def plot_predictions(predictions, targets):
 
     # 显示图形
     plt.show()
+
+    return r2, rmse
 
 
 def plot_residuals(predictions, targets):

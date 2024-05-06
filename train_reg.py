@@ -21,7 +21,7 @@
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              佛祖保佑       永无BUG
 """
-
+import torch
 # Encoding utf-8
 import torch.optim as optim
 from sklearn.model_selection import train_test_split
@@ -32,9 +32,12 @@ from utilis.evaluate import *
 from datasets import *
 
 
-def train():
+def train(config=RegressionConfig, show_status=True):
     # Load config
-    config = RegressionConfig()
+    # config = RegressionConfig()
+
+    # torch.manual_seed(seed=config.seed)
+    torch.cuda.manual_seed_all(seed=config.seed)
 
     # 1. 创建数据集
     # 读取文件
@@ -59,15 +62,15 @@ def train():
 
     # 3. 创建模型
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # model = ResNet1D(config.feature_size, config.hidden_size, config.output_size, config.num_layers,
-    #                  config.dropout_prob)
+
     model = RegNet(config.feature_size, config.hidden_size, config.output_size, config.num_layers, config.dropout_prob)
+    # model = NNModel(config.feature_size, config.hidden_size, config.output_size)
     model = model.to(device)
     # loss_fn = nn.MSELoss()
     loss_fn = nn.HuberLoss()
     current_optim = "RMS"
-    optimizer = optim.RMSprop(model.parameters(), lr=config.learning_rate, momentum=1e-2, weight_decay=1e-3)
-    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, config.num_epochs)
+    optimizer = optim.RMSprop(model.parameters(), lr=config.learning_rate, momentum=config.momentum, weight_decay=config.weight_decay)
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, config.num_epochs//3)
 
     train_losses = []
     test_losses = []
@@ -108,23 +111,25 @@ def train():
         test_losses.append(test_loss.cpu())
 
         # Print training progress
-        print(
-            f"Epoch {epoch + 1}/{config.num_epochs}, "
-            f"Train Loss: {running_loss / len(train_loader):.6f}, "
-            f"Test Loss: {test_loss / len(test_loader):.6f}")
+        if show_status:
+            print(
+                f"Epoch {epoch + 1}/{config.num_epochs}, "
+                f"Train Loss: {running_loss / len(train_loader):.6f}, "
+                f"Test Loss: {test_loss / len(test_loader):.6f}")
 
         if test_loss < best_loss:
             best_loss = test_loss
-            try:
-                torch.save(model.state_dict(), config.save_path)
-                print('\nBest loss: {}\n'.format(best_loss))
-            finally:
-                pass
+            if show_status:
+                try:
+                    torch.save(model.state_dict(), config.save_path)
+                    print('\nBest loss: {}\n'.format(best_loss))
+                finally:
+                    pass
 
         if epoch >= config.num_epochs * 2 / 3 and current_optim == "Adam":
             print("Use SGD ")
             current_optim = "SGD"
-            optimizer = optim.SGD(model.parameters(), lr=scheduler.get_last_lr()[-1], momentum=1e-2, weight_decay=1e-2)
+            optimizer = optim.SGD(model.parameters(), lr=scheduler.get_last_lr()[-1], momentum=config.momentum, weight_decay=config.weight_decay)
             scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.num_epochs // 3)
         if epoch >= config.num_epochs / 3 and current_optim == "RMS":
             current_optim = "Adam"
@@ -134,16 +139,17 @@ def train():
     print('Finished')
     # torch.save(model.state_dict(), config.save_path + "last")
     # 5. 评估模型
-    plot_loss(train_losses, test_losses)
+    if show_status:
+        plot_loss(train_losses, test_losses)
 
-    # 获取所有预测值和目标值，用于绘制预测结果对比图
-    all_train_predictions, all_train_targets = evaluate_model(model, train_loader, y_scaler)
-    plot_predictions(all_train_predictions, all_train_targets)
+        # 获取所有预测值和目标值，用于绘制预测结果对比图
+        all_train_predictions, all_train_targets = evaluate_model(model, train_loader, y_scaler)
+        plot_predictions(all_train_predictions, all_train_targets)
 
     all_test_predictions, all_test_targets = evaluate_model(model, test_loader, y_scaler)
-    plot_predictions(all_test_predictions, all_test_targets)
+    test_r2, test_rmse = plot_predictions(all_test_predictions, all_test_targets)
 
-    print(config.__dict__)
+    return test_rmse
 
 
 if __name__ == '__main__':
