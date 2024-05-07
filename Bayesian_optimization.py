@@ -11,7 +11,7 @@ from ax.utils.notebook.plotting import render
 def train_evaluate(parameters):
     config = RegressionConfig()
     config.batch_size = parameters.get("batch_size", 16)
-    # config.learning_rate = parameters.get("learning_rate", 1e-6)
+    config.learning_rate = parameters.get("learning_rate", 1) * 1e-6
     # config.momentum = parameters.get("momentum", 1e-2)
     config.hidden_size = parameters.get("hidden_size", 66) * 2
 
@@ -22,14 +22,16 @@ def train_evaluate(parameters):
 if __name__ == "__main__":
     best_parameters, values, experiment, model = optimize(
         parameters=[
-            {"name": "hidden_size", "type": "range", "bounds": [64, 75]},
-            {"name": "batch_size", "type": "range", "bounds": [8, 32]},
+            {"name": "hidden_size", "type": "range", "bounds": [50, 75], 'value_type': 'int'},
+            {"name": "batch_size", "type": "range", "bounds": [8, 32], 'value_type': 'int'},
+            {"name": "learning_rate", "type": "range", "bounds": [1, 10], 'value_type': 'float'},
         ],
 
         evaluation_function=train_evaluate,
         objective_name='accuracy',
     )
 
+    print("Best")
     print(best_parameters)
     means, covariances = values
     print(means)
