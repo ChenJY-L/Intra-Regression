@@ -10,16 +10,21 @@ class IntraDataset(Dataset):
     def __init__(self, df: pd.DataFrame, transform=None):
         # 将归一化后的数据转换为 PyTorch 张量
         self.transform = transform
-        # self.data_x, self.data_y = split_data(df)
-        self.data_x = torch.tensor(df.iloc[:, 3:].values).float()
-        self.data_y = torch.tensor(df.iloc[:, 2].values).float()
+
+        self.data_x = df.iloc[:, 3:].values
+        self.data_y = df.iloc[:, 2].values
 
     def __len__(self):
         return len(self.data_x)
 
     def __getitem__(self, idx):
-        x = self.data_x[idx]
-        y = self.data_y[idx]
+        if self.transform is None:
+            x = torch.tensor(self.data_x[idx]).float()
+            y = torch.tensor(self.data_y[idx]).float()
+        else:
+            x = self.data_x[idx]
+            y = self.data_y[idx]
+            x, y = self.transform(x, y)
 
         return x, y
 
@@ -88,6 +93,14 @@ def divide_dataframe(df, ratio):
     test_df = df[train_size:]
 
     return train_df, test_df
+
+
+def normalize_data(matrix):
+    max_value = matrix.max()
+    min_value = matrix.min()
+
+    normalized_matrix = (matrix - min_value) / (max_value - min_value)
+    return normalized_matrix
 
 
 def split_data(data: pd.DataFrame):

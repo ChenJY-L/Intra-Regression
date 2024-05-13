@@ -22,6 +22,7 @@ class CGPCA(BaseModel):
 
         self.model.fit(self.x, self.y)
 
+
 class CGGPR(BaseModel):
 
     def __init__(self, x, y, kernel, n_components=2, cv_folds=None):
@@ -32,12 +33,11 @@ class CGGPR(BaseModel):
         self.model = GaussianProcessRegressor(self.kernel)
 
 
-
 if __name__ == "__main__":
     n_com = 6
     cv_fold = 5
 
-    df = pd.read_excel("data/Intra_CLS.xlsx")
+    df = pd.read_excel("../data/Intra_CLS1.xlsx")
     x = df.iloc[:, 3:]
     y = df.iloc[:, 2]
     x = np.array(x)

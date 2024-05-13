@@ -30,7 +30,7 @@ class BaseModel:
         self.model.fit(self.x, self.y)
 
     def evaluate(self):
-        plot_predictions(self.y, self.y_pred)
+        plot_predictions(self.y_pred, self.y)
 
 
 def fit_spectral_data(X, y, n_components=2, cv_folds=5):
@@ -68,13 +68,13 @@ if __name__ == "__main__":
     n_com = 6
     cv_fold = 5
 
-    df = pd.read_excel("data/Intra_CLS.xlsx")
+    df = pd.read_excel("../data/Intra_CLS.xlsx")
     x = df.iloc[:, 3:]
     y = df.iloc[:, 2]
     x = np.array(x)
     y = np.array(y)
 
-    m = BaseModel(x,y,n_com,cv_fold)
+    m = BaseModel(x, y, n_com, cv_fold)
 
     m.fit()
     m.evaluate()

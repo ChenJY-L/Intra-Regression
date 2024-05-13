@@ -14,7 +14,7 @@ class RegressionConfig:
     """ Model parameters """
     seed = 666666    # 随机种子
     feature_size = 6  # 输入特征
-    hidden_size = 132  # 隐藏层维度  (160)
+    hidden_size = 136  # 隐藏层维度  (160)
     num_layers = 3  # CNN层数
     output_size = 1
     dropout_prob = 0.3

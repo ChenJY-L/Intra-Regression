@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+# from kan import KAN
 
 class NNModel(nn.Module):
     # RMSE: 0.15
@@ -226,6 +226,44 @@ class RegNet(nn.Module):
         y = y.view(batch_size, -1)
         y = self.fc2(y)
         y = y.squeeze(1)
+        return y
+
+
+class KANReg(nn.Module):
+
+    def __init__(self, input_size, hidden_size, output_size, num_blocks=3, drop_prob=0.3):
+        super(KANReg, self).__init__()
+
+        self.conv = nn.Conv1d(1, hidden_size, 1)
+        self.backbone_net = self._make_blocks(hidden_size, num_blocks)
+        self.avg_pool = nn.AdaptiveAvgPool1d(hidden_size//2)
+        self.dropout = nn.Dropout(drop_prob)
+
+        self.fc = nn.Sequential(nn.ELU(),
+                                nn.Linear(hidden_size * hidden_size//2, 64),
+                                nn.ELU(),
+                                nn.Linear(64, 16),
+                                nn.ELU())
+        self.kan = KAN([16, 1], grid=3, k=3)
+
+    def _make_blocks(self, base_channels, num_blocks):
+        blocks = []
+        for i in range(num_blocks):
+            blocks.append(ResidualBlock1D(base_channels, base_channels))
+        return nn.Sequential(*blocks)
+
+    def forward(self, x):
+        batch_size = x.size(0)
+        x = x.unsqueeze(1)
+        x = self.conv(x)
+        y = self.backbone_net(x)
+        y = F.relu(x + y, inplace=False)
+        y = self.avg_pool(y)
+        y = self.dropout(y)
+        y = y.view(batch_size, -1)
+        y = self.fc(y)
+        y = y.squeeze(1)
+        y = self.kan(y)
         return y
 
 
