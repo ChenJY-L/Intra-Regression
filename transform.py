@@ -21,7 +21,7 @@ class IntraTransform:
             HB = current['HB'].to_numpy()[0]
             cg = current['cg'].to_numpy()[0]
             intra2 = self.getNearestIntra(intra)
-            x2 = self.getData(intra2, HB, cg)
+            x2 = self.getData(intra2[0], HB, cg)
             res = self.interp(intra, intra2, x, x2)
             return torch.tensor(res).float(), torch.tensor(y).float()
 
