@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+
 # from kan import KAN
 
 class NNModel(nn.Module):
@@ -199,15 +201,15 @@ class RegNet(nn.Module):
 
         self.conv = nn.Conv1d(1, hidden_size, 1)
         self.backbone_net = self._make_blocks(hidden_size, num_blocks)
-        self.avg_pool = nn.AdaptiveAvgPool1d(hidden_size//2)
-        self.dropout = nn.Dropout(drop_prob)
+        self.avg_pool = nn.AdaptiveAvgPool1d(hidden_size // 2)
 
-        self.fc2 = nn.Sequential(nn.ELU(),
-                                 nn.Linear(hidden_size * hidden_size//2, 64),
-                                 nn.ELU(),
-                                 nn.Linear(64, 32),
-                                 nn.ELU(),
-                                 nn.Linear(32, output_size))
+        self.fc = nn.Sequential(nn.Dropout(drop_prob),
+                                nn.ELU(),
+                                nn.Linear(hidden_size * hidden_size // 2, 64),
+                                nn.ELU(),
+                                nn.Linear(64, 32),
+                                nn.ELU(),
+                                nn.Linear(32, output_size))
 
     def _make_blocks(self, base_channels, num_blocks):
         blocks = []
@@ -222,9 +224,8 @@ class RegNet(nn.Module):
         y = self.backbone_net(x)
         y = F.relu(x + y, inplace=False)
         y = self.avg_pool(y)
-        y = self.dropout(y)
         y = y.view(batch_size, -1)
-        y = self.fc2(y)
+        y = self.fc(y)
         y = y.squeeze(1)
         return y
 
@@ -236,11 +237,11 @@ class KANReg(nn.Module):
 
         self.conv = nn.Conv1d(1, hidden_size, 1)
         self.backbone_net = self._make_blocks(hidden_size, num_blocks)
-        self.avg_pool = nn.AdaptiveAvgPool1d(hidden_size//2)
+        self.avg_pool = nn.AdaptiveAvgPool1d(hidden_size // 2)
         self.dropout = nn.Dropout(drop_prob)
 
         self.fc = nn.Sequential(nn.ELU(),
-                                nn.Linear(hidden_size * hidden_size//2, 64),
+                                nn.Linear(hidden_size * hidden_size // 2, 64),
                                 nn.ELU(),
                                 nn.Linear(64, 16),
                                 nn.ELU())

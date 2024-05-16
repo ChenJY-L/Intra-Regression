@@ -10,8 +10,9 @@ from ax.utils.notebook.plotting import render
 
 def train_evaluate(parameters):
     config = RegressionConfig()
-    # config.batch_size = parameters.get("batch_size", 16)
-    # config.learning_rate = parameters.get("learning_rate", 1) * 1e-6
+    config.num_epochs = 1000
+    config.batch_size = parameters.get("batch_size", 16)
+    config.learning_rate = parameters.get("learning_rate", 1) * 1e-6
     # config.momentum = parameters.get("momentum", 1e-2)
     config.hidden_size = parameters.get("hidden_size", 66) * 2
     config.num_layers = parameters.get("num_layers", 3)
@@ -31,11 +32,21 @@ if __name__ == "__main__":
             },
             {"name": "num_layers",
              "type": "range",
-             "bounds": [2, 5],
+             "bounds": [1, 5],
              'value_type': 'int'
              },
-            # {"name": "batch_size", "type": "range", "bounds": [8, 32], 'value_type': 'int'},
-            # {"name": "learning_rate", "type": "range", "bounds": [1, 10], 'value_type': 'float'},
+            {
+                "name": "batch_size",
+                "type": "range",
+                "bounds": [8, 32],
+                'value_type': 'int'
+            },
+            {
+                "name": "learning_rate",
+                "type": "range",
+                "bounds": [1, 10],
+                'value_type': 'float'
+            },
         ],
 
         evaluation_function=train_evaluate,
@@ -48,12 +59,12 @@ if __name__ == "__main__":
     print(best_parameters)
     means, covariances = values
     print(means)
-    print(covariances)
+    # print(covariances)
 
-    best_objectives = np.array([[trial.objective_mean * 100 for trial in experiment.trials.values()]])
+    best_objectives = np.array([[trial.objective_mean for trial in experiment.trials.values()]])
 
     best_objective_plot = optimization_trace_single_method(
-        y=np.maximum.accumulate(best_objectives, axis=1),
+        y=np.minimum.accumulate(best_objectives, axis=1),
         title="Model performance vs. # of iterations",
         ylabel="RMSE, %",
     )

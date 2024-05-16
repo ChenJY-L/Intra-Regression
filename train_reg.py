@@ -21,9 +21,11 @@
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
              佛祖保佑       永无BUG
 """
+import pandas as pd
 import torch
 # Encoding utf-8
 import torch.optim as optim
+from torchaudio import transforms
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
 
@@ -54,14 +56,13 @@ def train(config=RegressionConfig, show_status=True):
     x_scaler = MinMaxScaler()
     train_df.iloc[:, 3:] = x_scaler.fit_transform(train_df.iloc[:, 3:])
     test_df.iloc[:, 3:] = x_scaler.transform(test_df.iloc[:, 3:])
-    # train_df.iloc[:, 3:] = normalize_data(train_df.iloc[:, 3:].values)
-    # test_df.iloc[:, 3:] = normalize_data(test_df.iloc[:, 3:].values)
 
     y_scaler = MinMaxScaler()
     train_df.iloc[:, 2] = y_scaler.fit_transform(train_df.iloc[:, 2].values.reshape(-1, 1))
     test_df.iloc[:, 2] = y_scaler.transform(test_df.iloc[:, 2].values.reshape(-1, 1))
 
-    intraTransform = IntraTransform(train_df)
+    # intraTransform = IntraTransform(pd.concat([train_df, test_df], ignore_index=True))
+    intraTransform = None
     train_data = IntraDataset(train_df, intraTransform)
     test_data = IntraDataset(test_df)
 
@@ -87,7 +88,7 @@ def train(config=RegressionConfig, show_status=True):
 
     train_losses = []
     test_losses = []
-
+    lr = []
     best_loss = float('inf')
 
     # 4. 训练模型
@@ -117,6 +118,7 @@ def train(config=RegressionConfig, show_status=True):
                 running_loss += loss.item()
 
         train_losses.append(running_loss / len(train_loader))
+        lr.append(scheduler.get_last_lr()[-1])
         scheduler.step()
 
         model.eval()
@@ -163,7 +165,7 @@ def train(config=RegressionConfig, show_status=True):
     # 5. 评估模型
     if show_status:
         plot_loss(train_losses, test_losses)
-
+        # plot_loss_and_lr(train_losses, test_losses, lr)
         # 获取所有预测值和目标值，用于绘制预测结果对比图
         all_train_predictions, all_train_targets = evaluate_model(model, train_loader, y_scaler)
         plot_predictions(all_train_predictions, all_train_targets)

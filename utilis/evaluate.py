@@ -34,6 +34,11 @@ def evaluate_model(m, data_loader: DataLoader, y_scaler: MinMaxScaler):
         return all_predictions, all_targets
 
 
+def plot_loss_and_lr(train_losses, test_losses, learning_rate):
+    plt.plot(learning_rate, label='Learning Rate')
+    plot_loss(train_losses, test_losses)
+
+
 def plot_loss(train_losses, test_losses):
     plt.plot(train_losses, label='Train Loss')
     plt.plot(test_losses, label='Test Loss')

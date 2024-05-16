@@ -3,16 +3,17 @@ import pandas as pd
 import torch
 
 
-class IntraTransform:
+class IntraTransform(torch.nn.Module):
     wave_length = ['1050', '1219', '1314',
                    '1409', '1550', '1609']
 
     def __init__(self, df: pd.DataFrame, prob=0.5):
+        super(IntraTransform, self).__init__()
         self.df = df
         self.prob = prob
         self.intra_list = np.sort(np.unique(df['intra'].to_list())).squeeze()
 
-    def __call__(self, x, y):
+    def forward(self, x, y):
         sigma = np.random.rand()
 
         if sigma < self.prob:
@@ -21,12 +22,16 @@ class IntraTransform:
             HB = current['HB'].to_numpy()[0]
             cg = current['cg'].to_numpy()[0]
             intra2 = self.getNearestIntra(intra)
-            x2 = self.getData(intra2[0], HB, cg)
-            res = self.interp(intra, intra2, x, x2)
-            return torch.tensor(res).float(), torch.tensor(y).float()
+            x2 = self.getData(intra2, HB, cg)
 
-        else:
-            return torch.tensor(x).float(), torch.tensor(y).float()
+            if x2 is not None and intra != intra2:
+                res = self.interp(intra, intra2, x, x2)
+                x = res
+
+        return self.toTensor(x, y)
+
+    def toTensor(self, x, y):
+        return torch.tensor(x).float(), torch.tensor(y).float()
 
     def locateData(self, x):
         index = None
@@ -44,44 +49,50 @@ class IntraTransform:
     def getData(self, intra, hb, cg):
         index = (self.df['intra'] == intra) & (self.df['HB'] == hb) & (self.df['cg'] == cg)
         value = self.df.loc[index].values
+
+        if len(value) == 0:
+            # 查找为空
+            return None
+
         return value[0, 3:]
 
     def getNearestIntra(self, intra):
-        index = np.where(self.intra_list == intra)[0]
-
+        index = np.searchsorted(self.intra_list, intra)
         if index == 0:
-            return self.intra_list[1]
-
-        elif index == (len(self.intra_list) - 1):
-            return self.intra_list[len(self.intra_list) - 1]
-
+            return self.intra_list[index]
+        # elif index == len(self.intra_list):
+        #     return self.intra_list[-1]
         else:
-            return self.intra_list[index + 1]
+            return self.intra_list[index - 1]
 
     def interp(self, x1, x2, y1, y2):
-        """
-        插值计算光谱
-        :param x1: 自变量1
-        :param x2: 自变量2
-        :param y1: 因变量1
-        :param y2: 因变量2
-        :return: 插值结果光谱
-        """
         y = [0] * 6
-        xp = [x1, x2[0]]
-
+        xp = [x2, x1]
+        xf = np.mean(xp)
         for i in range(len(self.wave_length)):
-            yp = [y1[i], y2[i]]
-            y[i] = np.interp(np.mean(xp), xp, yp)
+            yp = [y2[i], y1[i]]
+            y[i] = np.interp(xf, xp, yp)
 
         return y
 
 
 if __name__ == '__main__':
     file_path = 'data/Intra_CLS1.xlsx'
+    output_path = 'data/Aug_Intra.xlsx'
     df1 = pd.read_excel(file_path)
+    df2 = df1.copy(deep=True)
+
     t = IntraTransform(df1, prob=1)
-    testx = df1.iloc[150, 3:].to_list()
-    testy = df1.iloc[150, 2]
-    print(testx)
-    print(t(testx, testy))
+    for i, row in df1.iterrows():
+        x = row[3:].to_numpy()
+        y = row.iloc[2]
+        intra = np.mean([row.iloc[0], t.getNearestIntra(row.iloc[0])])
+
+        aug_x, aug_y = t(x, y)
+        new_row = np.concatenate(([intra, row.iloc[1], y], aug_x.numpy().reshape(-1)))
+        if intra == row.iloc[0]:
+            continue
+        df2.loc[len(df2)] = new_row
+
+
+    df2.to_excel(output_path, index=False)
