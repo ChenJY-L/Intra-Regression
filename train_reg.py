@@ -33,14 +33,15 @@ from config import RegressionConfig
 from models_reg import *
 from utilis.evaluate import *
 from datasets import *
-from transform import IntraTransform
+from transform import LinearTransform
 
 
-def train(config=RegressionConfig, show_status=True):
+def train(config=RegressionConfig, show_status=True, test_extra=False):
     """
     Function for train a regression model.
     :param config: (RegressionConfig) Regression config for train a model for Intra regression
     :param show_status: (Bool) Show or not show training status
+    :param test_extra: (Bool) Test or not the extra dataset
     :return: RMSE of the regression model
     """
 
@@ -173,8 +174,26 @@ def train(config=RegressionConfig, show_status=True):
     all_test_predictions, all_test_targets = evaluate_model(model, test_loader, y_scaler)
     test_r2, test_rmse = plot_predictions(all_test_predictions, all_test_targets)
 
-    return test_rmse
+    if test_extra:
+        pred, targets = test_model(config, model, x_scaler, y_scaler)
+        plot_tests(all_test_predictions, all_test_targets, pred, targets)
+
+    return test_rmse, model
+
+
+def test_model(config,
+               model,
+               scalerX,
+               scalerY):
+    df = read_data(config.test_data_path)
+    df.iloc[:, 3:] = scalerX.transform(df.iloc[:, 3:])
+    df.iloc[:, 2] = scalerY.transform(df.iloc[:, 2].values.reshape(-1, 1))
+
+    test_dataset = IntraDataset(df, None)
+    dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+    pred, targets = evaluate_model(model, dataloader, scalerY)
+    return pred, targets
 
 
 if __name__ == '__main__':
-    train()
+    train(test_extra=True)

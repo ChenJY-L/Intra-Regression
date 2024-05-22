@@ -1,12 +1,13 @@
 class RegressionConfig:
     """ Config class for regression"""
     """ Dataset parameters"""
-    data_path = './data/Aug_Intra.xlsx'
+    data_path = './data/Intra_CLS1.xlsx'
+    test_data_path = './data/Intra-extra.xlsx'
     ratio = 0.2  # train:test
 
     """ Training parameters """
-    batch_size = 16
-    learning_rate = 1e-6
+    batch_size = 9
+    learning_rate = 1e-5
     momentum = 1e-2
     weight_decay = 1e-3
     num_epochs = 300

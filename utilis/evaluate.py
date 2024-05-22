@@ -72,9 +72,30 @@ def plot_predictions(predictions, targets):
     plt.legend(['Diagonal', 'Data Points'])
 
     # 显示图形
-    plt.show()
+    plt.show(block=False)
 
     return r2, rmse
+
+
+def plot_tests(predictions, targets, test_predictions, test_targets):
+    plt.scatter(targets, predictions)
+    plt.scatter(test_targets, test_predictions, color='green')
+
+    plt.plot(np.append(targets, test_targets), np.append(targets, test_targets), color='red', linestyle='--')
+
+    plt.legend(['Validation points', 'Test points'])
+    # 计算 R^2
+    r2 = r2_score(test_targets, test_predictions)
+
+    # 计算 RMSE
+    rmse = np.sqrt(np.mean((test_predictions - test_targets) ** 2))
+    print("R2 {:.2f}, RMSE {:.2f}".format(r2, rmse))
+
+    # 添加标题和标签
+    plt.xlabel('True values')
+    plt.ylabel('Predicted values')
+    plt.title('True vs Predicted values\nRMSE: {:.2f}, R^2: {:.2f}'.format(rmse, r2))
+    plt.show()
 
 
 def plot_residuals(predictions, targets):
